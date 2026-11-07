@@ -111,6 +111,15 @@ def prism(pts_xz, y0, y1):
     return m
 
 
+def prism_xy(pts_xy, z0, z1):
+    """三角棱柱: pts_xy 为 XY 平面三个点, 沿 Z 从 z0 到 z1"""
+    v = [[x, y, z] for (x, y) in pts_xy for z in (z0, z1)]
+    f = [[0, 2, 4], [1, 5, 3], [0, 1, 3], [0, 3, 2], [2, 3, 5], [2, 5, 4], [4, 5, 1], [4, 1, 0]]
+    m = trimesh.Trimesh(vertices=v, faces=f, process=True)
+    trimesh.repair.fix_normals(m)
+    return m
+
+
 def rotz(m, deg):
     m = m.copy()
     m.apply_transform(T.rotation_matrix(np.radians(deg), [0, 0, 1]))
@@ -196,29 +205,42 @@ def make_pin():
 
 
 def make_cradle():
-    """手机托架: 套在杆端的方套筒 + 后挡板 + 底托(承重) + 两侧挡边。手机从上方放入, 重力压在底托上。
-    按使用姿态建模: x 横向, y 向上, z 沿杆朝接收设备。"""
+    """可滑动、可锁紧的手机托架(单个套)。
+    一个套在方杆上的滑块(方孔 + M3 锁紧螺丝)直接托在底托下面, 没有立柱。
+    充电线孔从底托一直贯穿到滑块底部, 线可以直接穿下去; 杆孔偏在线孔一侧(+X), 避开线孔。
+    手机竖放: 背靠后挡板, 底边压在底托上, 两侧挡边 + 前挡唇。
+    按使用姿态建模: x 横向, y 向上, z 沿杆朝接收设备; 后挡板贴热床"躺着"打印, 不用支撑。
+    读数: 滑块后端面(挡板背面)对着的杆刻度 + 约 10mm = 手机离玻璃的距离。"""
     inner_w = phone_w
-    out_w = inner_w + 6
+    hw = (inner_w + 6) / 2
     slot = phone_t + 2
-    back_t, plate_h, shelf_t, lip_h = 4, 46, 4, 6
-    sock_out, sock_hole, sock_len = rod_w + 8, rod_w + 0.3, 30
+    back_t, shelf_t, lip_h, plate_h = 4, 5, 6, 42
+    hole = rod_w + 0.4                                 # 杆孔(滑动配合)
+    bh = hole + 2 * 4.8                                # 滑块高 ~22
+    cy = bh / 2                                        # 杆轴线高度
+    pk = 8                                             # 充电线孔半宽(16mm 宽)
+    x_r = pk + 3.8 + hole / 2                          # 杆孔中心偏到 +X 侧
+    bx0 = -(pk + 4)
+    bx1 = x_r + hole / 2 + 6.8                         # 右壁 6.8mm: 放 M3 螺母槽
+    blen = 32
+    y_s0, y_s1 = bh, bh + shelf_t                      # 底托直接坐在滑块上
     front = back_t + slot
+    top = y_s1 + plate_h
     parts = [
-        box(-out_w / 2, 0, 0, out_w / 2, plate_h, back_t),                    # 后挡板
-        box(-out_w / 2, 0, 0, out_w / 2, shelf_t, front + 4),                 # 底托
-        box(-out_w / 2, 0, front, out_w / 2, lip_h + shelf_t, front + 4),     # 前挡唇
-        box(-sock_out / 2, 0, -sock_len, sock_out / 2, sock_out, 1),          # 插杆套筒
+        box(bx0, 0, 0, bx1, bh + 0.5, blen),                                   # 滑块(套)
+        box(-hw, y_s0, 0, hw, y_s1, front + 4),                                # 底托
+        box(-hw, y_s0, 0, hw, top, back_t),                                    # 后挡板
+        box(-hw, y_s1 - 0.5, front, hw, y_s1 + lip_h, front + 4),              # 前挡唇
     ]
-    for sx in (-1, 1):                                                         # 两侧挡边
-        x0 = inner_w / 2 if sx > 0 else -out_w / 2
-        parts.append(box(x0, 0, 0, x0 + 3, 40, front))
+    for sx in (-1, 1):
+        wx0 = inner_w / 2 if sx > 0 else -hw
+        parts.append(box(wx0, y_s1 - 0.5, 0, wx0 + 3, y_s1 + 40, front))       # 两侧挡边
     cuts = [
-        box(-sock_hole / 2, sock_out / 2 - sock_hole / 2, -sock_len - 0.1,
-            sock_hole / 2, sock_out / 2 + sock_hole / 2, 0),                  # 方杆孔(杆端顶到挡板)
-        cyl(4, sock_out / 2 + 0.1, base=(0, sock_out / 2, -sock_len / 2), axis="y"),   # 注胶孔
-        box(-24, 24, -0.1, 24, plate_h + 0.1, back_t + 0.1),                  # 减料窗(顶部敞开, 免搭桥)
-        box(-8, -0.1, back_t, 8, shelf_t + 0.1, front),                       # 充电线孔
+        box(x_r - hole / 2, cy - hole / 2, -0.1, x_r + hole / 2, cy + hole / 2, blen + 0.1),   # 方杆通孔
+        cyl(m3_hole, bx1 - x_r + 1, base=(x_r, cy, blen / 2), axis="x"),                        # M3 锁紧螺丝孔
+        cyl(m3_nut_d, m3_nut_h + 0.1, base=(bx1 - m3_nut_h, cy, blen / 2), axis="x", sections=6),
+        box(-pk, -0.1, back_t, pk, y_s1 + 0.1, front),                          # 充电线孔: 贯穿底托和滑块
+        box(-26, y_s1 + 14, -0.1, 26, top + 0.1, back_t + 0.1),                 # 减料窗(顶部敞开)
     ]
     return diff(union(*parts), *cuts)
 
@@ -244,4 +266,4 @@ if __name__ == "__main__":
     save("3_slider", make_slider(), T.rotation_matrix(np.radians(90), [1, 0, 0]))  # 圆台朝上
     save("4_tray", make_tray())
     save("5_pin", make_pin())
-    save("6_cradle", make_cradle(), T.rotation_matrix(np.radians(90), [1, 0, 0]))  # 底托贴热床
+    save("6_cradle", make_cradle())                                              # 后挡板贴热床
