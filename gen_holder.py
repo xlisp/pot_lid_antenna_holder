@@ -19,7 +19,8 @@ knob_d_bottom = 44    # 旋钮靠近玻璃那一端的直径
 knob_d_top    = 40    # 旋钮远离玻璃那一端(顶面)的直径
 knob_h        = 26    # 旋钮从玻璃面到顶面的高度
 sleeve_wall   = 3     # 套筒壁厚(默认值, 不是实测)
-phone_w = 80          # 手机宽度(去壳) + 约3mm 余量
+phone_w = 78          # 手机宽度 + 约3mm 余量 (你的手机约 7.5cm)
+phone_t = 9           # 手机厚度(去壳, 最厚处), 请量一下
 rod_len = 200         # 方杆长度 (杆顶离玻璃 ≈ rod_len + 套筒高度)
 
 # ---------- 一般不用改 ----------
@@ -194,6 +195,34 @@ def make_pin():
                  cyl(pin_d, (plate_t - cb_h) + 12 + 0.5, base=(0, 0, head_t - 0.01)))
 
 
+def make_cradle():
+    """手机托架: 套在杆端的方套筒 + 后挡板 + 底托(承重) + 两侧挡边。手机从上方放入, 重力压在底托上。
+    按使用姿态建模: x 横向, y 向上, z 沿杆朝接收设备。"""
+    inner_w = phone_w
+    out_w = inner_w + 6
+    slot = phone_t + 2
+    back_t, plate_h, shelf_t, lip_h = 4, 46, 4, 6
+    sock_out, sock_hole, sock_len = rod_w + 8, rod_w + 0.3, 30
+    front = back_t + slot
+    parts = [
+        box(-out_w / 2, 0, 0, out_w / 2, plate_h, back_t),                    # 后挡板
+        box(-out_w / 2, 0, 0, out_w / 2, shelf_t, front + 4),                 # 底托
+        box(-out_w / 2, 0, front, out_w / 2, lip_h + shelf_t, front + 4),     # 前挡唇
+        box(-sock_out / 2, 0, -sock_len, sock_out / 2, sock_out, 1),          # 插杆套筒
+    ]
+    for sx in (-1, 1):                                                         # 两侧挡边
+        x0 = inner_w / 2 if sx > 0 else -out_w / 2
+        parts.append(box(x0, 0, 0, x0 + 3, 40, front))
+    cuts = [
+        box(-sock_hole / 2, sock_out / 2 - sock_hole / 2, -sock_len - 0.1,
+            sock_hole / 2, sock_out / 2 + sock_hole / 2, 0),                  # 方杆孔(杆端顶到挡板)
+        cyl(4, sock_out / 2 + 0.1, base=(0, sock_out / 2, -sock_len / 2), axis="y"),   # 注胶孔
+        box(-24, 24, -0.1, 24, plate_h + 0.1, back_t + 0.1),                  # 减料窗(顶部敞开, 免搭桥)
+        box(-8, -0.1, back_t, 8, shelf_t + 0.1, front),                       # 充电线孔
+    ]
+    return diff(union(*parts), *cuts)
+
+
 def save(name, m, to_print=None):
     if to_print is not None:
         m = m.copy()
@@ -215,3 +244,4 @@ if __name__ == "__main__":
     save("3_slider", make_slider(), T.rotation_matrix(np.radians(90), [1, 0, 0]))  # 圆台朝上
     save("4_tray", make_tray())
     save("5_pin", make_pin())
+    save("6_cradle", make_cradle(), T.rotation_matrix(np.radians(90), [1, 0, 0]))  # 底托贴热床
