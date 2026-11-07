@@ -15,15 +15,16 @@ from trimesh import transformations as T
 
 # ---------- 需要你用游标卡尺实测后修改的参数 ----------
 # 旋钮是梯形圆柱(圆台): 下面三个数是我按照片估的, 一定要量!
-knob_d_bottom = 40    # 旋钮靠近玻璃那一端的直径
-knob_d_top    = 36    # 旋钮远离玻璃那一端(顶面)的直径
-knob_h        = 24    # 旋钮从玻璃面到顶面的高度
+knob_d_bottom = 44    # 旋钮靠近玻璃那一端的直径
+knob_d_top    = 40    # 旋钮远离玻璃那一端(顶面)的直径
+knob_h        = 26    # 旋钮从玻璃面到顶面的高度
 sleeve_wall   = 4     # 套筒壁厚(默认值, 不是实测)
 phone_w = 80          # 手机宽度(去壳) + 约3mm 余量
 rod_len = 200         # 方杆长度 (杆顶离玻璃 ≈ rod_len + 套筒高度)
 
 # ---------- 一般不用改 ----------
-knob_gap = 0.3        # 套筒孔相对旋钮的单边间隙(留给热熔胶)
+knob_gap = 1.0        # 套筒孔相对旋钮的单边间隙(留余地 + 热熔胶)
+bore_extra = 2.0      # 孔比旋钮多深(留余地)
 roof_t = 4            # 套筒顶板厚度
 rod_w = 14
 tol = 0.20            # 滑动配合单边间隙
@@ -43,7 +44,7 @@ head_d, head_t = 20, 2
 SEG = 64
 
 # 派生尺寸
-bore_h = knob_h + 0.5                                   # 套筒孔深(留 0.5mm)
+bore_h = knob_h + bore_extra                         # 套筒孔深
 sleeve_od = max(knob_d_bottom, knob_d_top) + 2 * knob_gap + 2 * sleeve_wall
 socket_z0 = bore_h + roof_t                             # 方杆底端离玻璃的高度
 flange_d = max(64, sleeve_od + 16)
