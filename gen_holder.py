@@ -18,7 +18,7 @@ from trimesh import transformations as T
 knob_d_bottom = 44    # 旋钮靠近玻璃那一端的直径
 knob_d_top    = 40    # 旋钮远离玻璃那一端(顶面)的直径
 knob_h        = 26    # 旋钮从玻璃面到顶面的高度
-sleeve_wall   = 4     # 套筒壁厚(默认值, 不是实测)
+sleeve_wall   = 3     # 套筒壁厚(默认值, 不是实测)
 phone_w = 80          # 手机宽度(去壳) + 约3mm 余量
 rod_len = 200         # 方杆长度 (杆顶离玻璃 ≈ rod_len + 套筒高度)
 
@@ -26,15 +26,16 @@ rod_len = 200         # 方杆长度 (杆顶离玻璃 ≈ rod_len + 套筒高度
 knob_gap = 1.0        # 套筒孔相对旋钮的单边间隙(留余地 + 热熔胶)
 bore_extra = 2.0      # 孔比旋钮多深(留余地)
 roof_t = 4            # 套筒顶板厚度
-rod_w = 14
+rod_w = 12            # 方杆截面(12x12, 比14省料省时)
+use_flange = False    # 底座贴玻璃的大圆盘: 关掉更快, 靠套筒边沿+热熔胶固定
 tol = 0.20            # 滑动配合单边间隙
 tol_tight = 0.08      # 底座插杆(较紧)
 flange_t = 4
-boss = 28
-socket_dep = 35
+boss = 24
+socket_dep = 25
 m3_hole, m3_nut_d, m3_nut_h = 3.2, 6.6, 2.8
-sl_s, sl_len = 28, 40
-turret_d, turret_h = 22, 10
+sl_s, sl_len = 24, 36
+turret_d, turret_h = 22, 12
 pin_d = 12
 pin_hole_d = pin_d + 0.1
 pin_hole_depth = 15
@@ -124,7 +125,7 @@ def make_base():
     g = prism([(boss / 2 - 0.5, socket_z0 - 0.5), (sleeve_od / 2 - 1, socket_z0 - 0.5),
                (boss / 2 - 0.5, socket_z0 + 14)], -1.25, 1.25)
     body = union(
-        cyl(flange_d, flange_t),
+        *([cyl(flange_d, flange_t)] if use_flange else []),
         cyl(sleeve_od, socket_z0),
         box(-boss / 2, -boss / 2, socket_z0 - 1, boss / 2, boss / 2, boss_h),
         *[rotz(g, a) for a in (0, 90, 180, 270)],
